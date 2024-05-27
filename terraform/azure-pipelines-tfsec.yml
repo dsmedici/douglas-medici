@@ -1,0 +1,30 @@
+trigger:
+  branches:
+    include:
+      - develop
+      - feature/*
+      - release/*
+      - hotfix/*
+      - main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+jobs:
+- job: Terraform
+  container: 'meu-registro/meu-runner-terraform-tfsec:latest'
+  steps:
+  - script: |
+      terraform init
+      terraform validate
+      terraform plan -out=tfplan
+    displayName: 'Terraform Init, Validate, and Plan'
+    
+  - script: |
+      tfsec
+    displayName: 'Run tfsec'
+
+  - script: |
+      terraform apply -auto-approve tfplan
+    displayName: 'Terraform Apply'
+    condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))

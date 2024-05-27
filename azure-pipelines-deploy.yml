@@ -1,0 +1,25 @@
+stages:
+- stage: Build
+  jobs:
+  - job: Build
+    steps:
+    - task: UseDotNet@2
+      inputs:
+        packageType: 'sdk'
+        version: '5.x'
+        installationPath: $(Agent.ToolsDirectory)/dotnet
+
+    - script: dotnet build --configuration Release
+      displayName: 'Build project'
+
+    - script: dotnet test --configuration Release --logger trx
+      displayName: 'Run unit tests'
+
+- stage: Deploy
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  jobs:
+  - job: Deploy
+    steps:
+    - script: az webapp deploy --name nome_da_webapp --resource-group grupo_de_recursos --src-path . --type zip
+      displayName: 'Deploy to Azure WebApp'
